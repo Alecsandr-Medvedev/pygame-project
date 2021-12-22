@@ -35,7 +35,6 @@ class Player(pygame.sprite.Sprite):
         if self.box and omit:
             self.box.rect.x, self.box.rect.y = self.rect.x + CELL_W, self.rect.y
             all_sprites.add(self.box)
-            # walls.add(self.box)
             boxes.add(self.box)
             self.box = None
 
@@ -164,8 +163,32 @@ class Box(Wall):
         super().__init__(pos)
         self.image.fill('green')
         self.collision = False
+        self.last_pos_y = self.rect.y
 
-    def update(self):
+    def update(self, shift_x, shift_y):
         if not self.collision:
+            self.last_pos_y = self.rect.y
             self.rect.y += GRAVITY
+            posx = (self.rect.x - shift_x) // CELL_W
+            repaint_map('level1/surface2.txt',
+                        (posx, (self.last_pos_y - shift_y) // CELL_H),
+                        (posx, (self.rect.y - shift_y) // CELL_H), 4)
         self.collision = False
+
+    def push_me(self, shift_x, shift_y):
+        posx = (self.rect.x - shift_x) // CELL_W
+        repaint_map('level1/surface2.txt',
+                    (posx, (self.last_pos_y - shift_y) // CELL_H),
+                    (posx, (self.rect.y - shift_y) // CELL_H), 0)
+
+
+def repaint_map(map, pos1, pos2, type):
+    file = [[int(j) for j in i.strip()] for i in open('../data/levels/' + map).readlines()]
+    file[pos1[1]][pos1[0]] = 0
+    file[pos2[1]][pos2[0]] = type
+    text = ''
+    for i in file:
+        for j in i:
+            text += str(j)
+        text += '\n'
+    open('../data/levels/' + map, 'w').write(text)

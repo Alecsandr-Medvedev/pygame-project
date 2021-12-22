@@ -103,6 +103,11 @@ def load_fantom_level(number):
                 fantom_all_sprites.add(wall)
 
 
+def return_shift():
+    for w in walls:
+        return w.rect.x, w.rect.y
+
+
 # Основной цикл
 def run():
     door = Door((0, 0))
@@ -161,11 +166,12 @@ def run():
         collision_box = pygame.sprite.spritecollide(player, boxes, False)
         if collision_box and not player.box and get_box:
             player.box = collision_box[0]
+            collision_box[0].push_me(*return_shift())
             collision_box[0].kill()
         collision_boxes = pygame.sprite.groupcollide(boxes, walls, False, False)
         for col in collision_boxes:
             col.collision = True
-        boxes.update()
+        boxes.update(*return_shift())
 
         screen.fill('darkgray')
         all_sprites.draw(screen)
