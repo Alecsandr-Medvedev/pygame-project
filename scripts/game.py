@@ -1,6 +1,6 @@
-from constants import screen, fantom_screen, boxes, all_sprites, platforms, fantom_all_sprites, walls, clock, FPS, MAP1, MAP2, MAP3,\
+from constants import screen, fantom_screen, boxes, all_sprites, platforms, buttons, fantom_all_sprites, walls, clock, FPS, MAP1, MAP2, MAP3,\
     CELL_H, CELL_W
-from classes import Player, Wall, Camera, Door, Platform, Box
+from classes import Player, Wall, Camera, Door, Platform, Box, Button
 import pygame
 
 
@@ -27,14 +27,18 @@ def load_platform(line, j, i, shift_x, shift_y):
     return platform
 
 
+def load_button(line, i, j, shift_x, shift_y, door):
+    pos = (j * CELL_W - shift_x, i * CELL_H - shift_y)
+    type = line[j + 1]
+    if type == 1:
+        btn = Button(pos, door)
+    all_sprites.add(btn)
+    buttons.add(btn)
+
+
 # Загрузка уровня
 def load_level(number, door):
-    shift_x = 0
-    shift_y = 0
-    for sprite in all_sprites:
-        shift_x = -sprite.rect.x
-        shift_y = -sprite.rect.y
-        break
+    shift_x, shift_y = map(lambda x: x * -1, return_shift())
     if number == 1:
         map_ = MAP1
     elif number == 2:
@@ -45,6 +49,7 @@ def load_level(number, door):
         return
     all_sprites.empty()
     walls.empty()
+    boxes.empty()
     count = 0
     for i, line in enumerate(map_):
         for j, el in enumerate(line):
@@ -64,9 +69,12 @@ def load_level(number, door):
                     platforms.add(platform)
                     count = 3
                 if el == 4:
-                    box = Box(pos)
+                    box = Box(pos, number)
                     all_sprites.add(box)
                     boxes.add(box)
+                if el == 5:
+                    count = 1
+                    load_button(line, i, j, shift_x, shift_y, door)
             else:
                 count -= 1
     return door
@@ -88,12 +96,18 @@ def load_fantom_level(number):
             map_ = MAP2
         else:
             map_ = MAP3
+        count = 0
         for i, line in enumerate(map_):
             for j, el in enumerate(line):
-                pos = (j * CELL_W - shift_x, i * CELL_H - shift_y)
-                if el:
-                    wall = Wall(pos)
-                    fantom_all_sprites.add(wall)
+                if not count:
+                    pos = (j * CELL_W - shift_x, i * CELL_H - shift_y)
+                    if el:
+                        wall = Wall(pos)
+                        fantom_all_sprites.add(wall)
+                        if el == 5:
+                            count += 1
+                else:
+                    count -= 1
     else:
         for i, line in enumerate(MAP1):
             for j in range(len(line)):
@@ -103,16 +117,19 @@ def load_fantom_level(number):
 
 
 def return_shift():
-    for w in walls:
-        return w.rect.x, w.rect.y
+    if walls:
+        for w in walls:
+            return w.rect.x, w.rect.y
+    else:
+        return 0, 0
 
 
 # Основной цикл
 def run():
     door = Door((0, 0))
-    level = 3
+    level = 2
     door = load_level(level, door)
-    load_fantom_level(3)
+    load_fantom_level(1)
     is_display_settings = 0
     pygame.display.set_caption("Play")
     player = Player()
@@ -148,7 +165,7 @@ def run():
                 if event.key == pygame.K_x:
                     load_fantom_level(level + 1)
                 if event.key == pygame.K_s:
-                    if collision_door:
+                    if collision_door and door.active:
                         return
                 if event.key == pygame.K_BACKSPACE:
                     get_box = True
@@ -172,11 +189,14 @@ def run():
         for col in collision_boxes:
             col.collision = True
         boxes.update(*return_shift())
+        collision_buttons = pygame.sprite.groupcollide(buttons, walls, False, False)
+        for col in collision_buttons:
+            col.active = True
 
         screen.fill('darkgray')
         all_sprites.draw(screen)
         if is_display_settings:
-            draw_settings(player, int(clock.get_fps()), collision_wall)
+            draw_settings(player, int(clock.get_fps()), collision_wall, level)
         fantom_screen.fill('gray')
         fantom_all_sprites.draw(fantom_screen)
         screen.blit(fantom_screen, (0, 0))
@@ -184,14 +204,15 @@ def run():
 
 
 # Служебная функция
-def draw_settings(player, fps, walls):
+def draw_settings(player, fps, walls, level):
     text_1 = f"Позиция игрока: {player.rect.center}"
     text_2 = f"Скорость по x: {player.speedx}"
     text_3 = f"Скорость по y: {player.speedy}"
-    text_7 = f""
+    text_7 = f"Коробки: {[(b.x, b.y) for b in boxes]}"
     text_5 = f"ФПС: {fps}"
-    text_4 = f'Стены (тип): {[w.type for w in walls]}'
-    text_6 = f''
+    text_4 = f'k'
+    text_6 = f'Сдвиг: {return_shift()}'
+    text_8 = f'Поверхность: {level}'
     draw_text(screen, text_1, 12, 10, 10, 'black')
     draw_text(screen, text_2, 12, 10, 30, 'black')
     draw_text(screen, text_3, 12, 10, 50, 'black')
@@ -199,6 +220,7 @@ def draw_settings(player, fps, walls):
     draw_text(screen, text_5, 12, 10, 90, 'black')
     draw_text(screen, text_6, 12, 10, 110, 'black')
     draw_text(screen, text_7, 12, 10, 130, 'black')
+    draw_text(screen, text_8, 12, 10, 150, 'black')
 
 
 if __name__ == '__main__':

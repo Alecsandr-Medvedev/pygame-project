@@ -21,6 +21,7 @@ fantom_all_sprites = pygame.sprite.Group()
 walls = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
 boxes = pygame.sprite.Group()
+buttons = pygame.sprite.Group()
 
 screen = pygame.display.set_mode((WIDTH, (HEIGHT - 60)))
 fantom_screen = pygame.display.set_mode((WIDTH, (HEIGHT - 60)))
