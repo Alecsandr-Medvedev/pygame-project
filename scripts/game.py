@@ -66,7 +66,6 @@ def load_level(number, door):
                 if el == 4:
                     box = Box(pos)
                     all_sprites.add(box)
-                    # walls.add(box)
                     boxes.add(box)
             else:
                 count -= 1
@@ -165,6 +164,7 @@ def run():
         platforms.update()
         collision_box = pygame.sprite.spritecollide(player, boxes, False)
         if collision_box and not player.box and get_box:
+            load_fantom_level(level - 1)
             player.box = collision_box[0]
             collision_box[0].push_me(*return_shift())
             collision_box[0].kill()

@@ -5,6 +5,7 @@ pygame.init()
 infoObject = pygame.display.Info()
 WIDTH = infoObject.current_w
 HEIGHT = infoObject.current_h
+FRICTION = 3
 CELL_W = 60
 CELL_H = 60
 FPS = 60
@@ -26,11 +27,12 @@ fantom_screen = pygame.display.set_mode((WIDTH, (HEIGHT - 60)))
 fantom_screen = fantom_screen.convert(screen)
 fantom_screen.set_alpha(50)
 # Параметры игрока
-SPEED_PLAYER = 20
+SPEED_PLAYER = 8
 SPEEDJUMP_PLAYER = 50
 SIZE_PLAYER = (CELL_W, CELL_H * 2)
 POS_PLAYER = WIDTH // 2, HEIGHT // 2
-MAX_SPEED = 30
+MAX_SPEED = 40
+PUSH = FRICTION * 3
 # Параметры платформы
 PLATFORM_SPEED = CELL_W // 6
 PLATFORM_SIZE = (CELL_W * 5, CELL_H)

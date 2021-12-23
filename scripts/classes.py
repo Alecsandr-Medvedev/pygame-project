@@ -1,7 +1,7 @@
 import pygame
 
-from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, GRAVITY, \
-    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_SIZE, all_sprites, walls, boxes
+from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, PUSH, MAX_SPEED, GRAVITY, FRICTION, \
+    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_SIZE, all_sprites, boxes
 
 
 # Создание игрока
@@ -25,11 +25,15 @@ class Player(pygame.sprite.Sprite):
             if self.onGround:
                 self.speedy = -self.speed_jump # Если прыжок и мы на земле к скорости по y добавляется энергия
         if left:
-            self.speedx = -self.speed # Если влево к скорости по x добавляется энергия
+            self.speedx += -self.speed # Если влево к скорости по x добавляется энергия
         if right:
-            self.speedx = self.speed # Если вправо к скорости по x добавляется энергия
-        if not (left or right):
-            self.speedx = 0 # Если не вправо и не влево стоять
+            self.speedx += self.speed # Если вправо к скорости по x добавляется энергия
+        if self.speedx > 0:
+            self.speedx -= FRICTION
+        elif self.speedx < 0:
+            self.speedx += FRICTION # Торможение
+        if abs(self.speedx) < FRICTION:
+            self.speedx = 0 # Для предотвращения дергания
         if not self.onGround:
             self.speedy += GRAVITY # Если мы не наземле мы падаем
         if self.box and omit:
@@ -37,6 +41,11 @@ class Player(pygame.sprite.Sprite):
             all_sprites.add(self.box)
             boxes.add(self.box)
             self.box = None
+        if abs(self.speedx) > MAX_SPEED:
+            if self.speedx > 0:
+                self.speedx = MAX_SPEED
+            if self.speedx < 0:
+                self.speedx = -MAX_SPEED
 
         self.onGround = False
 
@@ -69,13 +78,16 @@ class Player(pygame.sprite.Sprite):
 
     def collide(self, speedx, speedy, walls):
         collide_walls = pygame.sprite.spritecollide(self, walls, False)
-        for p in collide_walls: # проходимся по стенам с которыми произошла колизия
+        if collide_walls: # проходимся по стенам с которыми произошла колизия
+            p = collide_walls[0]
             # Если скорость была меньше 0 то равняемся по левому краю стены
             if speedx > 0:
                 self.rect.right = p.rect.left
+                self.speedx -= PUSH
             # Если скорость была больше 0 то равняемся по правому краю стены
-            if speedx < 0:
+            elif speedx < 0:
                 self.rect.left = p.rect.right
+                self.speedx += PUSH
             # Если скорость была больше 0 то равняемся по верхнему краю стены и говорим что мы на земле
             if speedy > 0:
                 self.rect.bottom = p.rect.top
@@ -177,9 +189,8 @@ class Box(Wall):
 
     def push_me(self, shift_x, shift_y):
         posx = (self.rect.x - shift_x) // CELL_W
-        repaint_map('level1/surface2.txt',
-                    (posx, (self.last_pos_y - shift_y) // CELL_H),
-                    (posx, (self.rect.y - shift_y) // CELL_H), 0)
+        posy = (self.rect.y - shift_y) // CELL_H
+        repaint_map('level1/surface2.txt', (posx, posy), (posx, posy), 0)
 
 
 def repaint_map(map, pos1, pos2, type):
