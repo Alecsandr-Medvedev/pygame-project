@@ -7,7 +7,7 @@ from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, P
 # Создание игрока
 class Player(pygame.sprite.Sprite):
     # Иницализация
-    def __init__(self, level):
+    def __init__(self):
         super().__init__()
         self.speedx = 0  # Скорость по x
         self.speedy = 0  # Скорость по y
@@ -18,7 +18,6 @@ class Player(pygame.sprite.Sprite):
         self.speed_jump = SPEEDJUMP_PLAYER # Скорость прышка игрока
         self.speed = SPEED_PLAYER # Скорость игрока
         self.box = None # Есть ли у игрока коробка
-        self.level = level
 
     def update(self, walls):
         left, right, up, omit = self.check_buttons() # Определение направления
@@ -39,7 +38,6 @@ class Player(pygame.sprite.Sprite):
             self.speedy += GRAVITY # Если мы не наземле мы падаем
         if self.box and omit:
             self.box.rect.x, self.box.rect.y = self.rect.x + CELL_W, self.rect.y
-            self.box.level = self.level
             all_sprites.add(self.box)
             boxes.add(self.box)
             self.box = None
@@ -133,7 +131,6 @@ class Door(Wall):
         super().__init__(pos)
         self.image = pygame.Surface(SIZE_PLAYER)
         self.image.fill('darkred')
-        self.active = False
 
 
 class Platform(Wall):
@@ -174,53 +171,29 @@ class Platform(Wall):
 
 
 class Box(Wall):
-    def __init__(self, pos, level):
+    def __init__(self, pos):
         super().__init__(pos)
-        print(level)
         self.image.fill('green')
         self.collision = False
         self.last_pos_y = self.rect.y
-        self.surface = 'level1/surface' + str(level) + '.txt'
-        self.x = 0
-        self.y = 0
 
     def update(self, shift_x, shift_y):
         if not self.collision:
             self.last_pos_y = self.rect.y
             self.rect.y += GRAVITY
-            self.x = round((self.rect.x - shift_x) / CELL_W) + 1
-            repaint_map(self.surface,
-                        (self.x, round((self.last_pos_y - shift_y) / CELL_H)),
-                        (self.x, round((self.rect.y - shift_y) / CELL_H)), 4)
-            self.y = (self.rect.y - shift_y) // CELL_H
+            posx = (self.rect.x - shift_x) // CELL_W
+            repaint_map('level1/surface2.txt',
+                        (posx, (self.last_pos_y - shift_y) // CELL_H),
+                        (posx, (self.rect.y - shift_y) // CELL_H), 4)
         self.collision = False
 
     def push_me(self, shift_x, shift_y):
-        posx = round((self.rect.x - shift_x) / CELL_W) + 1
-        posy = round((self.rect.y - shift_y) / CELL_H)
-        repaint_map(self.surface, (0, 0), (posx, posy), 0)
-        print(posx, posy)
-
-
-class Button(pygame.sprite.Sprite):
-    def __init__(self, pos, type):
-        super().__init__()
-        self.image = pygame.Surface((CELL_W // 2, CELL_H // 2))
-        self.image.fill('yellow')
-        self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = pos[0] + CELL_W // 2, pos[1] + CELL_H // 2
-        self.active = False
-        self.type = type
-
-    def update(self):
-        if self.active:
-            print('dsf')
-            self.type.active = True
+        posx = (self.rect.x - shift_x) // CELL_W
+        posy = (self.rect.y - shift_y) // CELL_H
+        repaint_map('level1/surface2.txt', (posx, posy), (posx, posy), 0)
 
 
 def repaint_map(map, pos1, pos2, type):
-    if pos1 == pos2:
-        return
     file = [[int(j) for j in i.strip()] for i in open('../data/levels/' + map).readlines()]
     file[pos1[1]][pos1[0]] = 0
     file[pos2[1]][pos2[0]] = type
