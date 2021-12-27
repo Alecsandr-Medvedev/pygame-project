@@ -211,8 +211,8 @@ class Button(pygame.sprite.Sprite):
 
     def update(self):
         if self.active:
+            print('dsf')
             self.type.active = True
-
 
 
 def repaint_map(map, pos1, pos2, type):
