@@ -70,6 +70,7 @@ def load_level(number, door):
                     count = 3
                 if el == 4:
                     box = Box(pos, number)
+                    print(number)
                     all_sprites.add(box)
                     boxes.add(box)
                 if el == 5:
@@ -132,7 +133,7 @@ def run():
     load_fantom_level(1)
     is_display_settings = 0
     pygame.display.set_caption("Play")
-    player = Player()
+    player = Player(level)
     all_sprites.add(player)
     camera = Camera()
     collision_door = False
@@ -154,12 +155,14 @@ def run():
                         door = load_level(level, door)
                         all_sprites.add(player)
                         load_fantom_level(level - 1)
+                        player.level = level
                 if event.key == pygame.K_e:
                     if level != 3:
                         level += 1
                         door = load_level(level, door)
                         all_sprites.add(player)
                         load_fantom_level(level + 1)
+                        player.level = level
                 if event.key == pygame.K_z:
                     load_fantom_level(level - 1)
                 if event.key == pygame.K_x:
@@ -189,9 +192,10 @@ def run():
         for col in collision_boxes:
             col.collision = True
         boxes.update(*return_shift())
-        collision_buttons = pygame.sprite.groupcollide(buttons, walls, False, False)
+        collision_buttons = pygame.sprite.groupcollide(buttons, boxes, False, False)
         for col in collision_buttons:
             col.active = True
+            # print('f')
 
         screen.fill('darkgray')
         all_sprites.draw(screen)
