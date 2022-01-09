@@ -18,7 +18,13 @@ clock = pygame.time.Clock()
 
 all_sprites = pygame.sprite.Group()
 fantom_all_sprites = pygame.sprite.Group()
+all_sprites1 = pygame.sprite.Group()
+all_sprites2 = pygame.sprite.Group()
+all_sprites3 = pygame.sprite.Group()
 walls = pygame.sprite.Group()
+walls1 = pygame.sprite.Group()
+walls2 = pygame.sprite.Group()
+walls3 = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
 boxes = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
@@ -37,3 +43,4 @@ PUSH = FRICTION * 3
 # Параметры платформы
 PLATFORM_SPEED = CELL_W // 6
 PLATFORM_SIZE = (CELL_W * 5, CELL_H)
+
