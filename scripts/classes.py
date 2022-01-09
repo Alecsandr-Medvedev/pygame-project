@@ -98,9 +98,6 @@ class Player(pygame.sprite.Sprite):
                 self.rect.top = p.rect.bottom
                 self.speedy = 0
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, 'black', self.rect)
-
 
 class Wall(pygame.sprite.Sprite):
     # Инициализация стены
@@ -175,20 +172,31 @@ class Platform(Wall):
 
 
 class Box(Wall):
-    def __init__(self, pos):
+    def __init__(self, pos, level):
         super().__init__(pos)
         self.image.fill('green')
         self.collision = False
         self.last_pos_y = self.rect.y
+        self.surface = 'level1/surface' + str(level) + '.txt'
+        self.x = 0
+        self.y = 0
 
-    def update(self):
+    def update(self, shift_x, shift_y):
         if not self.collision:
             self.last_pos_y = self.rect.y
             self.rect.y += GRAVITY
+            self.x = round((self.rect.x - shift_x) / CELL_W) + 1
+            repaint_map(self.surface,
+                        (self.x, round((self.last_pos_y - shift_y) / CELL_H)),
+                        (self.x, round((self.rect.y - shift_y) / CELL_H)), 4)
+            self.y = (self.rect.y - shift_y) // CELL_H
         self.collision = False
 
-    def push_me(self):
-        pass
+    def push_me(self, shift_x, shift_y):
+        posx = round((self.rect.x - shift_x) / CELL_W) + 1
+        posy = round((self.rect.y - shift_y) / CELL_H)
+        repaint_map('level1/surface2.txt', (0, 0), (posx, posy), 0)
+        print(posx, posy)
 
 
 class Button(pygame.sprite.Sprite):
@@ -206,3 +214,16 @@ class Button(pygame.sprite.Sprite):
             print('dsf')
             self.type.active = True
 
+
+def repaint_map(map, pos1, pos2, type):
+    if pos1 == pos2:
+        return
+    file = [[int(j) for j in i.strip()] for i in open('../data/levels/' + map).readlines()]
+    file[pos1[1]][pos1[0]] = 0
+    file[pos2[1]][pos2[0]] = type
+    text = ''
+    for i in file:
+        for j in i:
+            text += str(j)
+        text += '\n'
+    open('../data/levels/' + map, 'w').write(text)
