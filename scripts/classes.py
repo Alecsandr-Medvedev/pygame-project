@@ -98,6 +98,9 @@ class Player(pygame.sprite.Sprite):
                 self.rect.top = p.rect.bottom
                 self.speedy = 0
 
+    def draw(self, surface):
+        pygame.draw.rect(surface, 'black', self.rect)
+
 
 class Wall(pygame.sprite.Sprite):
     # Инициализация стены
@@ -172,21 +175,20 @@ class Platform(Wall):
 
 
 class Box(Wall):
-    def __init__(self, pos, level):
+    def __init__(self, pos):
         super().__init__(pos)
         self.image.fill('green')
         self.collision = False
         self.last_pos_y = self.rect.y
-        self.surface = 'level1/surface' + str(level) + '.txt'
-        self.x = 0
-        self.y = 0
 
-    def update(self, shift_x, shift_y):
+    def update(self):
         if not self.collision:
             self.last_pos_y = self.rect.y
             self.rect.y += GRAVITY
-            self.x = round((self.rect.x - shift_x) / CELL_W) + 1
         self.collision = False
+
+    def push_me(self):
+        pass
 
 
 class Button(pygame.sprite.Sprite):

@@ -43,4 +43,3 @@ PUSH = FRICTION * 3
 # Параметры платформы
 PLATFORM_SPEED = CELL_W // 6
 PLATFORM_SIZE = (CELL_W * 5, CELL_H)
-
