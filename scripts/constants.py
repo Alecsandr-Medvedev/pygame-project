@@ -10,9 +10,9 @@ CELL_W = 60
 CELL_H = 60
 FPS = 60
 GRAVITY = 3
-MAP1 = [[int(el) for el in line.strip()] for line in open('../data/levels/level1/surface1.txt').readlines()]
-MAP2 = [[int(el) for el in line.strip()] for line in open('../data/levels/level1/surface2.txt').readlines()]
-MAP3 = [[int(el) for el in line.strip()] for line in open('../data/levels/level1/surface3.txt').readlines()]
+MAP1 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface1.txt').readlines()]
+MAP2 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface2.txt').readlines()]
+MAP3 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface3.txt').readlines()]
 # Параметры игровго цикла
 clock = pygame.time.Clock()
 
@@ -26,6 +26,7 @@ walls1 = pygame.sprite.Group()
 walls2 = pygame.sprite.Group()
 walls3 = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
+levers = pygame.sprite.Group()
 boxes = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 
@@ -41,5 +42,6 @@ POS_PLAYER = WIDTH // 2, HEIGHT // 2
 MAX_SPEED = 40
 PUSH = FRICTION * 3
 # Параметры платформы
-PLATFORM_SPEED = CELL_W // 6
-PLATFORM_SIZE = (CELL_W * 5, CELL_H)
+PLATFORM_COUNT = 15
+PLATFORM_SPEED = CELL_W // PLATFORM_COUNT
+

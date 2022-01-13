@@ -1,12 +1,6 @@
-def func1(a):
-    return a
+lines = open('../data/levels/level1/surface3.txt', 'r').readlines()
+new_lines = ''
+for line in lines:
+    new_lines += ' '.join([el for el in line.strip()]) + '\n'
 
-
-def func2(a):
-    return a - 1
-
-
-for i in range(1, 3):
-    b = i * 2
-    a = eval(f'func{i}(b)')
-    print(a)
+open('../data/levels/level1/surface3.txt', 'w').write(new_lines)

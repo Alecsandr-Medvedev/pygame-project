@@ -1,7 +1,7 @@
 import pygame
 
 from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, PUSH, MAX_SPEED, GRAVITY, FRICTION, \
-    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_SIZE, all_sprites, boxes
+    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_COUNT
 
 
 # Создание игрока
@@ -18,9 +18,12 @@ class Player(pygame.sprite.Sprite):
         self.speed_jump = SPEEDJUMP_PLAYER # Скорость прышка игрока
         self.speed = SPEED_PLAYER # Скорость игрока
         self.box = None # Есть ли у игрока коробка
+        self.omit = False
+        self.get_box = False
+        self.last_direction = 'right'
 
     def update(self, walls):
-        left, right, up, omit = self.check_buttons() # Определение направления
+        left, right, up, omit, get_box = self.check_buttons() # Определение направления
         if up:
             if self.onGround:
                 self.speedy = -self.speed_jump # Если прыжок и мы на земле к скорости по y добавляется энергия
@@ -36,18 +39,19 @@ class Player(pygame.sprite.Sprite):
             self.speedx = 0 # Для предотвращения дергания
         if not self.onGround:
             self.speedy += GRAVITY # Если мы не наземле мы падаем
-        if self.box and omit:
-            self.box.rect.x, self.box.rect.y = self.rect.x + CELL_W, self.rect.y
-            all_sprites.add(self.box)
-            boxes.add(self.box)
-            self.box = None
         if abs(self.speedx) > MAX_SPEED:
             if self.speedx > 0:
                 self.speedx = MAX_SPEED
             if self.speedx < 0:
                 self.speedx = -MAX_SPEED
 
+        self.omit = omit
+        self.get_box = get_box
         self.onGround = False
+        if self.speedx > 0:
+            self.last_direction = 'right'
+        elif self.speedx < 0:
+            self.last_direction = 'left'
 
         self.rect.y += self.speedy # Прибавляем к положению игрока его скорость
         self.collide(0, self.speedy, walls) # Проверка на столкновения
@@ -74,7 +78,11 @@ class Player(pygame.sprite.Sprite):
             omit = True
         else:
             omit = False
-        return left, right, up, omit
+        if key[pygame.K_BACKSPACE]:
+            get_box = True
+        else:
+            get_box = False
+        return left, right, up, omit, get_box
 
     def collide(self, speedx, speedy, walls):
         collide_walls = pygame.sprite.spritecollide(self, walls, False)
@@ -137,53 +145,47 @@ class Door(Wall):
         self.active = False
 
 
-class Platform(Wall):
+class Platform(pygame.sprite.Sprite):
     # Инициализация платформы
-    def __init__(self, pos, start, end, direction, active):
-        super().__init__(pos)
-        self.image = pygame.Surface(PLATFORM_SIZE)
+    def __init__(self, pos, len_way, direction, active, size, id_):
+        self.image = pygame.Surface((CELL_W * size, CELL_H))
+        super().__init__()
         self.image.fill('blue')
-        self.start = start # Начальная точка
-        self.end = end # Конечная точка
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = pos
         self.direction = direction # Направление на x или на y
         self.direction_go = '+' # Направление вперёд или назад
         self.active = active # Едет ли платформа
         self.speed = PLATFORM_SPEED # Скорость платформы
+        self.len_way = int(len_way)
+        self.passed_way = 0
+        self.count = 1 / PLATFORM_COUNT
+        self.id = id_
 
     def update(self):
         # Если платформа активровона
         if self.active:
             # То двигаемся в нужном напрвлении, а затем проверяем не вначале или не в конце ли он
+            self.last_go = pygame.time.get_ticks()
             if self.direction == 'x':
-                if self.direction_go == '+':
-                    self.rect.x += self.speed
-                elif self.direction_go == '-':
-                    self.rect.x -= self.speed
-                if self.rect.x > self.end[0]:
-                    self.direction_go = '-'
-                if self.rect.x < self.start[0]:
-                    self.direction_go = '+'
+                self.rect.x += self.speed
             if self.direction == 'y':
-                if self.direction_go == '+':
-                    self.rect.y += self.speed
-                elif self.direction_go == '-':
-                    self.rect.y -= self.speed
-                if self.rect.y >= self.end[1]:
-                    self.direction_go = '-'
-                if self.rect.y <= self.start[0]:
-                    self.direction_go = '+'
+                self.rect.y += self.speed
+            self.passed_way += self.count
+            if self.passed_way >= self.len_way:
+                self.passed_way = 0
+                self.speed *= -1
 
 
 class Box(Wall):
-    def __init__(self, pos):
+    def __init__(self, pos, level):
         super().__init__(pos)
         self.image.fill('green')
         self.collision = False
-        self.last_pos_y = self.rect.y
+        self.level = level
 
     def update(self):
         if not self.collision:
-            self.last_pos_y = self.rect.y
             self.rect.y += GRAVITY
         self.collision = False
 
@@ -192,17 +194,33 @@ class Box(Wall):
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos, type):
+    def __init__(self, pos, door=None, _id=None):
         super().__init__()
         self.image = pygame.Surface((CELL_W // 2, CELL_H // 2))
         self.image.fill('yellow')
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = pos[0] + CELL_W // 2, pos[1] + CELL_H // 2
-        self.active = False
-        self.type = type
+        self.door = door
+        self.id = _id
+        self.platform = None
 
-    def update(self):
-        if self.active:
-            print('dsf')
-            self.type.active = True
+    def activate(self, active):
+        if self.door:
+            self.door.active = active
+        else:
+            self.platform.active = active
+
+
+class Lever(Button):
+    def __init__(self, pos, _id):
+        super().__init__(pos, _id=_id)
+        self.colors = ['orange', 'purple']
+        self.active = 0
+        self.image = pygame.Surface((CELL_W // 2, CELL_H))
+        self.image.fill(self.colors[self.active])
+
+    def activated(self):
+        self.active = (self.active + 1) % 2
+        self.activate(self.active)
+        self.image.fill(self.colors[self.active])
 
