@@ -1,7 +1,7 @@
 from constants import screen, fantom_screen, boxes, all_sprites, all_sprites1, all_sprites2, all_sprites3, walls1, \
-    platforms, buttons, fantom_all_sprites, walls, clock, FPS, MAP1, MAP2, MAP3, walls2, walls3, levers,\
+    platforms, buttons, fantom_all_sprites, walls, clock, FPS, MAP1, MAP2, MAP3, walls2, walls3, levers, acids,\
     CELL_H, CELL_W
-from classes import Player, Wall, Camera, Door, Platform, Box, Button, Lever
+from classes import Player, Wall, Camera, Door, Platform, Box, Button, Lever, Acid
 import pygame
 
 
@@ -27,12 +27,12 @@ def load_platform(el, pos):
     return platform
 
 
-def load_button(el, door, pos):
+def load_button(el, door, pos, level):
     type = el[1]
     if type == '0':
-        btn = Button(pos, door=door)
+        btn = Button(pos, level, door=door)
     else:
-        btn = Button(pos, _id=int(type))
+        btn = Button(pos, level, _id=int(type))
     return btn
 
 
@@ -56,6 +56,10 @@ def load_levels():
                         eval(f"all_sprites{level}.add(box)")
                         # eval(f"walls{level}.add(box)")
                         boxes.add(box)
+                    elif el == 7:
+                        acid = Acid(pos, level)
+                        eval(f"all_sprites{level}.add(acid)")
+                        acids.add(acid)
                 else:
                     el = str(el)
                     if el[0] == '3':
@@ -64,12 +68,12 @@ def load_levels():
                         eval(f"all_sprites{level}.add(platform)")
                         platforms.add(platform)
                     if el[0] == '5':
-                        btn = load_button(el, door, pos)
+                        btn = load_button(el, door, pos, level)
                         eval(f"all_sprites{level}.add(btn)")
                         buttons.add(btn)
                     if el[0] == '6':
-                        lever = Lever(pos, int(el[1]))
-                        eval(f"all_sprites{level}.add(platform)")
+                        lever = Lever(pos, int(el[1]), level)
+                        eval(f"all_sprites{level}.add(lever)")
                         levers.add(lever)
 
     for btn in buttons:
@@ -77,6 +81,11 @@ def load_levels():
             for plat in platforms:
                 if plat.id == btn.id:
                     btn.platform = plat
+    for lever in levers:
+        if lever.id:
+            for plat in platforms:
+                if plat.id == lever.id:
+                    lever.platform = plat
     return door
 
 
@@ -95,9 +104,9 @@ def run():
     player = Player()
     camera = Camera()
 
-    collision_door = False
     target = player
     while True:
+        action = False
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -112,58 +121,85 @@ def run():
                         level -= 1
                         all_sprites = eval(f'all_sprites{level}')
                         walls = eval(f'walls{level}')
+                        fantom_all_sprites = eval(f'all_sprites{level}')
                 if event.key == pygame.K_e:
                     if level != 3:
                         level += 1
                         all_sprites = eval(f'all_sprites{level}')
                         walls = eval(f'walls{level}')
+                        fantom_all_sprites = eval(f'all_sprites{level}')
                 if event.key == pygame.K_z:
-                    fantom_all_sprites = eval(f'all_sprites{level - 1}')
+                    if level != 1:
+                        fantom_all_sprites = eval(f'all_sprites{level - 1}')
                 if event.key == pygame.K_x:
-                    fantom_all_sprites = eval(f'all_sprites{level + 1}')
-                if event.key == pygame.K_s:
-                    if collision_door and door.active:
-                        return
+                    if level != 3:
+                        fantom_all_sprites = eval(f'all_sprites{level + 1}')
+                if event.key == pygame.K_RSHIFT:
+                    action = True
 
         player.update(walls)
-        collision_door = pygame.sprite.collide_mask(player, door)
+        if door.active:
+            collision_door = pygame.sprite.collide_mask(player, door)
         for group in [all_sprites1, all_sprites2, all_sprites3]:
             for sprite in group:
                 camera.apply(sprite)
         camera.apply(player)
         camera.update(target)
         platforms.update()
-        collision_box = pygame.sprite.spritecollide(player, boxes, False)
-        if collision_box and not player.box and player.get_box:
-            player.box = collision_box[0]
-            collision_box[0].kill()
-        if player.box and player.omit:
+        if not player.box and action:
+            collision_box = pygame.sprite.spritecollide(player, boxes, False)
+            for col in collision_box:
+                if col.level == level:
+                    player.box = col
+                    col.kill()
+                    action = False
+        if player.box and action:
             shift = -CELL_W if player.last_direction == 'left' else CELL_W
             player.box.rect.x, player.box.rect.y, player.box.level = player.rect.x + shift, player.rect.y, level
             all_sprites.add(player.box)
             boxes.add(player.box)
             player.box = None
+            action = False
         for box in boxes:
             collision_boxes = pygame.sprite.spritecollide(box, eval(f'walls{box.level}'), False)
             if collision_boxes:
                 box.collision = True
         boxes.update()
         for button in buttons:
-            collision_button_1 = pygame.sprite.spritecollide(button, boxes, False)
-            collision_button_2 = pygame.sprite.collide_mask(button, player)
-            if collision_button_1 or collision_button_2:
-                button.activate(True)
+            if button.level == level:
+                collision_button_1 = pygame.sprite.collide_mask(button, player)
             else:
-                button.activate(False)
-        collision_platforms = pygame.sprite.spritecollide(player, platforms, False)
-        if collision_platforms:
-            player.speedy += collision_platforms[0].speed
+                collision_button_1 = False
+            collision_button_2 = pygame.sprite.spritecollide(button, boxes, False)
+            for col in collision_button_2:
+                if col.level == button.level:
+                    col_2 = True
+                    break
+            else:
+                col_2 = False
+            if collision_button_1 or col_2:
+                button.activate(1)
+            else:
+                button.activate(0)
+        if action:
+            collision_levers = pygame.sprite.spritecollide(player, levers, False)
+            for col in collision_levers:
+                if col.level == level:
+                    col.activated()
+        collision_acids = pygame.sprite.spritecollide(player, acids, False)
+        for col in collision_acids:
+            if col.level == level:
+                print('you died')
+                return
+        if action and collision_door:
+            print(collision_door)
+            return
 
-        screen.fill('darkgray')
+        screen.fill('black')
         all_sprites.draw(screen)
         if is_display_settings:
-            draw_settings(player, int(clock.get_fps()), level)
-        fantom_screen.fill('gray')
+            draw_settings(player, int(clock.get_fps()), level, buttons)
+        fantom_screen.fill('darkgray')
         fantom_all_sprites.draw(fantom_screen)
         screen.blit(fantom_screen, (0, 0))
         player.draw(screen)
@@ -171,23 +207,23 @@ def run():
 
 
 # Служебная функция
-def draw_settings(player, fps, level):
+def draw_settings(player, fps, level, level_b):
     text_1 = f"Позиция игрока: {player.rect.center}"
     text_2 = f"Скорость по x: {player.speedx}"
     text_3 = f"Скорость по y: {player.speedy}"
-    text_7 = f"Коробки: {''}"
+    text_7 = f"fdsd: {[a.level for a in level_b]}"
     text_5 = f"ФПС: {fps}"
     text_4 = f'k'
     text_6 = f'Сдвиг: {""}'
     text_8 = f'Поверхность: {level}'
-    draw_text(screen, text_1, 12, 10, 10, 'black')
-    draw_text(screen, text_2, 12, 10, 30, 'black')
-    draw_text(screen, text_3, 12, 10, 50, 'black')
-    draw_text(screen, text_4, 12, 10, 70, 'black')
-    draw_text(screen, text_5, 12, 10, 90, 'black')
-    draw_text(screen, text_6, 12, 10, 110, 'black')
-    draw_text(screen, text_7, 12, 10, 130, 'black')
-    draw_text(screen, text_8, 12, 10, 150, 'black')
+    draw_text(screen, text_1, 12, 10, 10, 'white')
+    draw_text(screen, text_2, 12, 10, 30, 'white')
+    draw_text(screen, text_3, 12, 10, 50, 'white')
+    draw_text(screen, text_4, 12, 10, 70, 'white')
+    draw_text(screen, text_5, 12, 10, 90, 'white')
+    draw_text(screen, text_6, 12, 10, 110, 'white')
+    draw_text(screen, text_7, 12, 10, 130, 'white')
+    draw_text(screen, text_8, 12, 10, 150, 'white')
 
 
 if __name__ == '__main__':

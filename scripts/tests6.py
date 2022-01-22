@@ -1,6 +1,12 @@
-lines = open('../data/levels/level1/surface3.txt', 'r').readlines()
-new_lines = ''
-for line in lines:
-    new_lines += ' '.join([el for el in line.strip()]) + '\n'
-
-open('../data/levels/level1/surface3.txt', 'w').write(new_lines)
+for i in range(50):
+    for j in range(50):
+        if i == 0 or i == 49 or j == 0 or j == 49:
+            a = 1
+        else:
+            a = 0
+        if j == 49:
+            b = ''
+        else:
+            b = ' '
+        print(a, end=b)
+    print()

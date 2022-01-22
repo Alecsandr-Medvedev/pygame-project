@@ -1,7 +1,8 @@
 import pygame
 
 from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, PUSH, MAX_SPEED, GRAVITY, FRICTION, \
-    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_COUNT
+    CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_COUNT, wall_img, acid_img, box_img, button_down_img,\
+    button_up_img, lever_up_img, lever_down_img, platform_img, door_lock_img, door_open_img
 
 
 # Создание игрока
@@ -18,12 +19,10 @@ class Player(pygame.sprite.Sprite):
         self.speed_jump = SPEEDJUMP_PLAYER # Скорость прышка игрока
         self.speed = SPEED_PLAYER # Скорость игрока
         self.box = None # Есть ли у игрока коробка
-        self.omit = False
-        self.get_box = False
         self.last_direction = 'right'
 
     def update(self, walls):
-        left, right, up, omit, get_box = self.check_buttons() # Определение направления
+        left, right, up = self.check_buttons() # Определение направления
         if up:
             if self.onGround:
                 self.speedy = -self.speed_jump # Если прыжок и мы на земле к скорости по y добавляется энергия
@@ -44,9 +43,6 @@ class Player(pygame.sprite.Sprite):
                 self.speedx = MAX_SPEED
             if self.speedx < 0:
                 self.speedx = -MAX_SPEED
-
-        self.omit = omit
-        self.get_box = get_box
         self.onGround = False
         if self.speedx > 0:
             self.last_direction = 'right'
@@ -62,27 +58,16 @@ class Player(pygame.sprite.Sprite):
     def check_buttons(self):
         # Проверка на нажатие нужных кнопок
         key = pygame.key.get_pressed()
+        left = False
+        right = False
+        up = False
         if key[pygame.K_a]:
             left = True
-        else:
-            left = False
         if key[pygame.K_d]:
             right = True
-        else:
-            right = False
         if key[pygame.K_w]:
             up = True
-        else:
-            up = False
-        if key[pygame.K_RSHIFT]:
-            omit = True
-        else:
-            omit = False
-        if key[pygame.K_BACKSPACE]:
-            get_box = True
-        else:
-            get_box = False
-        return left, right, up, omit, get_box
+        return left, right, up
 
     def collide(self, speedx, speedy, walls):
         collide_walls = pygame.sprite.spritecollide(self, walls, False)
@@ -114,8 +99,7 @@ class Wall(pygame.sprite.Sprite):
     # Инициализация стены
     def __init__(self, pos):
         super().__init__()
-        self.image = pygame.Surface((CELL_W, CELL_H))
-        self.image.fill('red')
+        self.image = wall_img
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = pos
 
@@ -140,17 +124,19 @@ class Door(Wall):
     # Инициализация двери
     def __init__(self, pos):
         super().__init__(pos)
-        self.image = pygame.Surface(SIZE_PLAYER)
-        self.image.fill('darkred')
-        self.active = False
+        self.active = 0
+        self.images = [door_lock_img, door_open_img]
+        self.image = self.images[self.active]
+
+    def change_image(self):
+        self.image = self.images[self.active]
 
 
 class Platform(pygame.sprite.Sprite):
     # Инициализация платформы
     def __init__(self, pos, len_way, direction, active, size, id_):
-        self.image = pygame.Surface((CELL_W * size, CELL_H))
         super().__init__()
-        self.image.fill('blue')
+        self.image = pygame.transform.scale(platform_img, (CELL_W * size, CELL_H))
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = pos
         self.direction = direction # Направление на x или на y
@@ -180,7 +166,7 @@ class Platform(pygame.sprite.Sprite):
 class Box(Wall):
     def __init__(self, pos, level):
         super().__init__(pos)
-        self.image.fill('green')
+        self.image = box_img
         self.collision = False
         self.level = level
 
@@ -194,33 +180,42 @@ class Box(Wall):
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos, door=None, _id=None):
+    def __init__(self, pos, level, door=None, _id=None):
         super().__init__()
-        self.image = pygame.Surface((CELL_W // 2, CELL_H // 2))
-        self.image.fill('yellow')
+        self.image = button_up_img
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = pos[0] + CELL_W // 2, pos[1] + CELL_H // 2
+        self.colors = [button_up_img, button_down_img]
+        self.rect.x, self.rect.y = pos
         self.door = door
         self.id = _id
         self.platform = None
+        self.level = level
 
     def activate(self, active):
         if self.door:
             self.door.active = active
+            self.door.change_image()
         else:
             self.platform.active = active
+        self.image = self.colors[active]
 
 
 class Lever(Button):
-    def __init__(self, pos, _id):
-        super().__init__(pos, _id=_id)
-        self.colors = ['orange', 'purple']
+    def __init__(self, pos, level, _id):
+        super().__init__(pos, level, _id=_id)
+        self.image = lever_down_img
+        self.colors = [lever_down_img, lever_up_img]
         self.active = 0
-        self.image = pygame.Surface((CELL_W // 2, CELL_H))
-        self.image.fill(self.colors[self.active])
 
     def activated(self):
         self.active = (self.active + 1) % 2
-        self.activate(self.active)
-        self.image.fill(self.colors[self.active])
+        self.platform.active = self.active
+        self.image = self.colors[self.active]
+
+
+class Acid(Wall):
+    def __init__(self, pos, level):
+        super().__init__(pos)
+        self.image = acid_img
+        self.level = level
 
