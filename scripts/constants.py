@@ -4,6 +4,7 @@ import sys
 import pygame
 # Создание основных прарметров игры
 pygame.init()
+pygame.display.set_caption("Play")
 # Параметры окна
 infoObject = pygame.display.Info()
 WIDTH = infoObject.current_w
@@ -13,9 +14,9 @@ CELL_W = 60
 CELL_H = 60
 FPS = 60
 GRAVITY = 3
-MAP1 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface1.txt').readlines()]
-MAP2 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface2.txt').readlines()]
-MAP3 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface3.txt').readlines()]
+map1 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface1.txt').readlines()]
+map2 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface2.txt').readlines()]
+map3 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface3.txt').readlines()]
 # Параметры игровго цикла
 clock = pygame.time.Clock()
 
@@ -50,9 +51,9 @@ PLATFORM_COUNT = 15
 PLATFORM_SPEED = CELL_W // PLATFORM_COUNT
 
 
-def load_image(name, place='img', colorkey=None):
+def load_image(name, place=['img'], colorkey=None):
     f = os.path.abspath('')
-    fullname = f[:-7] + os.path.join('data', place, name)
+    fullname = f[:-7] + os.path.join('data', *place, name)
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
@@ -77,4 +78,15 @@ lever_down_img = pygame.transform.scale(load_image('LeverDown.png'), (CELL_W, CE
 platform_img = load_image('Platform.png')
 door_lock_img = pygame.transform.scale(load_image('DoorLock.png'), (CELL_W, CELL_H * 2))
 door_open_img = pygame.transform.scale(load_image('DoorOpen.png'), (CELL_W, CELL_H * 2))
+animation_run_right = [pygame.transform.scale(load_image(f'goR{i}.png', ['aimation', 'runright']),
+                                              (CELL_W * 2, CELL_H * 2)) for i in range(8)]
+animation_run_left = [pygame.transform.scale(load_image(f'goL{i}.png', ['aimation', 'runleft']),
+                                              (CELL_W * 2, CELL_H * 2)) for i in range(8)]
 
+animation_jump_right = [pygame.transform.scale(load_image(f'jumpR{i}.png', ['aimation', 'jumpright']),
+                                              (CELL_W * 2, CELL_H * 2)) for i in range(8)]
+animation_jump_left = [pygame.transform.scale(load_image(f'jumpL{i}.png', ['aimation', 'jumpleft']),
+                                              (CELL_W * 2, CELL_H * 2)) for i in range(8)]
+stay_right = pygame.transform.scale(load_image('stayright.png'), (CELL_W * 2, CELL_H * 2))
+stay_left = pygame.transform.scale(load_image('stayleft.png'), (CELL_W * 2, CELL_H * 2))
+SPEED_ANIMATION_PLAYER = 100

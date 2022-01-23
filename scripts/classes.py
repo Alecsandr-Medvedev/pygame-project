@@ -2,7 +2,8 @@ import pygame
 
 from constants import SPEED_PLAYER, SPEEDJUMP_PLAYER, SIZE_PLAYER, POS_PLAYER, PUSH, MAX_SPEED, GRAVITY, FRICTION, \
     CELL_H, CELL_W, WIDTH, HEIGHT, PLATFORM_SPEED, PLATFORM_COUNT, wall_img, acid_img, box_img, button_down_img,\
-    button_up_img, lever_up_img, lever_down_img, platform_img, door_lock_img, door_open_img
+    button_up_img, lever_up_img, lever_down_img, platform_img, door_lock_img, door_open_img, animation_jump_left, \
+    animation_jump_right, animation_run_right, animation_run_left, stay_right, stay_left, SPEED_ANIMATION_PLAYER
 
 
 # Создание игрока
@@ -13,13 +14,17 @@ class Player(pygame.sprite.Sprite):
         self.speedx = 0  # Скорость по x
         self.speedy = 0  # Скорость по y
         self.onGround = False # Положение на земле
-        self.image = pygame.Surface(SIZE_PLAYER) # Игрок
+        self.image = stay_right # Игрок
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = POS_PLAYER # Позиция игрока
         self.speed_jump = SPEEDJUMP_PLAYER # Скорость прышка игрока
         self.speed = SPEED_PLAYER # Скорость игрока
         self.box = None # Есть ли у игрока коробка
         self.last_direction = 'right'
+        self.speed_animation = SPEED_ANIMATION_PLAYER
+        self.last_animation = pygame.time.get_ticks()
+        self.num_animation = 0
+        self.len_animation = len(animation_run_right)
 
     def update(self, walls):
         left, right, up = self.check_buttons() # Определение направления
@@ -48,7 +53,25 @@ class Player(pygame.sprite.Sprite):
             self.last_direction = 'right'
         elif self.speedx < 0:
             self.last_direction = 'left'
-
+        if self.speedx:
+            if pygame.time.get_ticks() - self.last_animation >= self.speed_animation:
+                self.last_animation = pygame.time.get_ticks()
+                if -self.speedy > 3:
+                    if self.last_direction == 'right':
+                        self.image = animation_jump_right[self.num_animation]
+                    else:
+                        self.image = animation_jump_left[self.num_animation]
+                else:
+                    if self.last_direction == 'right':
+                        self.image = animation_run_right[self.num_animation]
+                    else:
+                        self.image = animation_run_left[self.num_animation]
+                self.num_animation = (self.num_animation + 1) % self.len_animation
+        else:
+            if self.last_direction == 'right':
+                self.image = stay_right
+            else:
+                self.image = stay_left
         self.rect.y += self.speedy # Прибавляем к положению игрока его скорость
         self.collide(0, self.speedy, walls) # Проверка на столкновения
 
@@ -92,7 +115,7 @@ class Player(pygame.sprite.Sprite):
                 self.speedy = 0
 
     def draw(self, surface):
-        pygame.draw.rect(surface, 'black', self.rect)
+        surface.blit(self.image, self.rect)
 
 
 class Wall(pygame.sprite.Sprite):
@@ -219,3 +242,48 @@ class Acid(Wall):
         self.image = acid_img
         self.level = level
 
+
+class Button_Interface:
+    def __init__(self, pos, size, text, func, surface, size_font, args=None, clicable=True):
+        self.pos = pos
+        self.size = size
+        self.func = func
+        self.select = False
+        self.surface = surface
+        self.text = text
+        self.font_name = pygame.font.match_font('arial')
+        self.font = pygame.font.Font(self.font_name, size_font)
+        self.text_surface = self.font.render(text, True, 'black')
+        self.text_rect = self.text_surface.get_rect()
+        self.text_rect.center = size[0] // 2 + pos[0], size[1] // 2 + pos[1]
+        self.args = args
+        self.clicable = clicable
+        if not self.func:
+            self.func = self.clicked
+
+    def update(self, mouse_pos, click):
+        if self.clicable:
+            if self.line_cross(mouse_pos[0], 1, self.pos[0], self.size[0])\
+                    and self.line_cross(mouse_pos[1], 1, self.pos[1], self.size[1]):
+                self.select = True
+            else:
+                self.select = False
+            if self.select and click:
+                if self.args:
+                    return self.func(self.args)
+                return self.func()
+
+    def draw(self):
+        color = 'white'
+        if self.select:
+            color = 'orange'
+        if not self.clicable:
+            color = 'gray'
+        pygame.draw.rect(self.surface, color, pygame.Rect(*self.pos, *self.size))
+        self.surface.blit(self.text_surface, self.text_rect)
+
+    def line_cross(self, p1, l1, p2, l2):
+        return (p1 <= p2 <= p1 + l1) or (p2 <= p1 <= p2 + l2)
+
+    def clicked(self):
+        return self.text
