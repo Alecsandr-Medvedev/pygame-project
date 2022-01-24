@@ -1,5 +1,5 @@
 from constants import screen, fantom_screen, boxes, all_sprites, all_sprites1, all_sprites2, all_sprites3, walls1, \
-    platforms, buttons, fantom_all_sprites, walls, clock, FPS, map1, map2, map3, walls2, walls3, levers, acids,\
+    platforms, buttons, fantom_all_sprites, walls, clock, FPS, walls2, walls3, levers, acids,\
     CELL_H, CELL_W, WIDTH, HEIGHT
 from classes import Player, Wall, Camera, Door, Platform, Box, Button, Lever, Acid, Button_Interface
 import pygame
@@ -39,8 +39,14 @@ def load_button(el, door, pos, level):
 
 
 # Загрузка уровня
-def load_levels():
+def load_levels(level_world):
     door = Door((0, 0))
+    map1 = [[int(el) for el in line.strip().split()] for line in
+            open(f'../data/levels/level{level_world}/surface1.txt').readlines()]
+    map2 = [[int(el) for el in line.strip().split()] for line in
+            open(f'../data/levels/level{level_world}/surface2.txt').readlines()]
+    map3 = [[int(el) for el in line.strip().split()] for line in
+            open(f'../data/levels/level{level_world}/surface3.txt').readlines()]
     for level in range(1, 4):
         for i, line in enumerate(eval(f"map{level}")):
             for j, el in enumerate(line):
@@ -104,12 +110,9 @@ def run(level_world):
     boxes.empty()
     buttons.empty()
     acids.empty()
-    map1 = [[int(el) for el in line.strip().split()] for line in open(f'../data/levels/level{level_world}/surface1.txt').readlines()]
-    map2 = [[int(el) for el in line.strip().split()] for line in open(f'../data/levels/level{level_world}/surface2.txt').readlines()]
-    map3 = [[int(el) for el in line.strip().split()] for line in open(f'../data/levels/level{level_world}/surface3.txt').readlines()]
     level = 2
 
-    door = load_levels()
+    door = load_levels(level_world)
     collision_door = False
     all_sprites = eval(f'all_sprites{level}')
     walls = eval(f'walls{level}')
@@ -333,7 +336,7 @@ def start_window():
                     if answer == 'Назад':
                         return
                     if answer == 'win':
-                        passed_level = int(open('../data/levels.txt').read().strip())
+                        passed_level = int(open('../data/info_for_programme/levels.txt').read().strip())
                         n = (WIDTH // CELL_W // 2) - 1
                         m = 100 // n
                         for i in range(n):

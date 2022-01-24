@@ -14,9 +14,6 @@ CELL_W = 60
 CELL_H = 60
 FPS = 60
 GRAVITY = 3
-map1 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface1.txt').readlines()]
-map2 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface2.txt').readlines()]
-map3 = [[int(el) for el in line.strip().split()] for line in open('../data/levels/level1/surface3.txt').readlines()]
 # Параметры игровго цикла
 clock = pygame.time.Clock()
 
