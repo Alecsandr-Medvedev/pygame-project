@@ -83,7 +83,7 @@ def load_levels(level_world):
                         lever = Lever(pos, int(el[1]), level)
                         eval(f"all_sprites{level}.add(lever)")
                         levers.add(lever)
-
+    print(levers)
     for btn in buttons:
         if btn.id:
             for plat in platforms:
@@ -137,7 +137,6 @@ def run(level_world):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     answer = pause()
-                    print(answer)
                     if answer == 'Выйти':
                         return
                 if event.key == pygame.K_F1:
@@ -308,18 +307,16 @@ def final_window(result, time, lev=None):
 def start_window():
     btns = []
     passed_level = int(open('../data/info_for_programme/levels.txt').read().strip())
-    n = (WIDTH // CELL_W // 2) - 1
-    m = 100 // n
-    for i in range(n):
-        for j in range(m):
-            lev = n * j + i + 1
-            if lev <= passed_level:
-                clicable = True
-            else:
-                clicable = False
-            level = Button_Interface((CELL_W * (i + i) + CELL_W, CELL_H * (j + j) + CELL_H), (CELL_W, CELL_H), str(lev),
-                                     run, screen, 30, args=lev, clicable=clicable)
-            btns.append(level)
+    for i in range(5):
+        lev = i + 1
+        if lev <= passed_level:
+            clicable = True
+        else:
+            clicable = False
+        level = Button_Interface((CELL_W * (i + i) + CELL_W, CELL_H * 3),
+                                 (CELL_W, CELL_H), str(lev),
+                                 run, screen, 30, args=lev, clicable=clicable)
+        btns.append(level)
     return_btn = Button_Interface((WIDTH // 2 - CELL_W, HEIGHT * 0.8), (CELL_W * 2, CELL_H), 'Назад', None, screen, 30)
     btns.append(return_btn)
     while True:
@@ -337,19 +334,16 @@ def start_window():
                         return
                     if answer == 'win':
                         passed_level = int(open('../data/info_for_programme/levels.txt').read().strip())
-                        n = (WIDTH // CELL_W // 2) - 1
-                        m = 100 // n
-                        for i in range(n):
-                            for j in range(m):
-                                lev = n * j + i + 1
-                                if lev <= passed_level:
-                                    clicable = True
-                                else:
-                                    clicable = False
-                                level = Button_Interface((CELL_W * (i + i) + CELL_W, CELL_H * (j + j) + CELL_H),
-                                                         (CELL_W, CELL_H), str(lev),
-                                                         run, screen, 30, args=lev, clicable=clicable)
-                                btns.append(level)
+                        for i in range(5):
+                            lev = i + 1
+                            if lev <= passed_level:
+                                clicable = True
+                            else:
+                                clicable = False
+                            level = Button_Interface((CELL_W * (i + i) + CELL_W, CELL_H * 3),
+                                                     (CELL_W, CELL_H), str(lev),
+                                                     run, screen, 30, args=lev, clicable=clicable)
+                            btns.append(level)
         screen.fill('#202020')
         for btn in btns:
             btn.draw()
